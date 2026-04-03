@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id               String             @id @default(cuid())
+  slug             String             @unique
+  name             String
+  sortOrder        Int                @default(0)
+  PartyDraftVote   PartyDraftVote[]
+  PartyPolicy      PartyPolicy[]
+  PartyPolicyDraft PartyPolicyDraft[]
+}
+
+model Nation {
+  id                    String                  @id @default(cuid())
+  slug                  String                  @unique
+  name                  String
+  sortOrder             Int                     @default(0)
+  PartyUpvote           PartyUpvote[]
+  User                  User[]
+  UserCategoryMonthVote UserCategoryMonthVote[]
+}
+
+model Party {
+  id                         String                       @id @default(cuid())
+  slug                       String                       @unique
+  name                       String
+  shortName                  String
+  accentColor                String                       @default("#0d9488")
+  isSystem                   Boolean                      @default(false)
+  allowMemberJoin            Boolean                      @default(false)
+  ownerUserId                String?                      @unique
+  createdAt                  DateTime                     @default(now())
+  description                String                       @default("")
+  User                       User?                        @relation(fields: [ownerUserId], references: [id])
+  PartyCouncilLeadershipVote PartyCouncilLeadershipVote[]
+  PartyDraftVote             PartyDraftVote[]
+  PartyMember                PartyMember[]
+  PartyOfficeLeadershipVote  PartyOfficeLeadershipVote[]
+  PartyPolicy                PartyPolicy[]
+  PartyPolicyDraft           PartyPolicyDraft[]
+  PartyUpvote                PartyUpvote[]
+}
+
+model PartyCouncilLeadershipVote {
+  id              String   @id @default(cuid())
+  partyId         String
+  periodKey       String
+  voterUserId     String
+  candidateUserId String
+  createdAt       DateTime @default(now())
+  Party           Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([voterUserId, partyId, periodKey, candidateUserId], map: "PartyCouncilLeadershipVote_voter_party_period_candidate_key")
+}
+
+model PartyDraftVote {
+  id               String           @id @default(cuid())
+  userId           String
+  partyId          String
+  categoryId       String
+  draftId          String
+  votingMonth      String
+  createdAt        DateTime         @default(now())
+  PartyPolicyDraft PartyPolicyDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  Category         Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  Party            Party            @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  User             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, partyId, categoryId, votingMonth])
+}
+
+model PartyMember {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  partyId   String
+  createdAt DateTime @default(now())
+  rank      String   @default("MEMBER")
+  Party     Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PartyOfficeLeadershipVote {
+  id              String   @id @default(cuid())
+  partyId         String
+  periodKey       String
+  office          String
+  voterUserId     String
+  candidateUserId String
+  createdAt       DateTime @default(now())
+  Party           Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([voterUserId, partyId, periodKey, office], map: "PartyOfficeLeadershipVote_voter_party_period_office_key")
+}
+
+model PartyPolicy {
+  id                        String                  @id @default(cuid())
+  partyId                   String
+  categoryId                String
+  catchPhrase               String
+  shortDescription          String
+  longDescription           String
+  budgetDeltaVsActive       Float
+  monthsToComplete          Int
+  taxNarrative              String
+  isContinuationOfStatusQuo Boolean                 @default(false)
+  publishedMonth            String?
+  Category                  Category                @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  Party                     Party                   @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  UserCategoryMonthVote     UserCategoryMonthVote[]
+
+  @@unique([partyId, categoryId])
+}
+
+model PartyPolicyDraft {
+  id                        String           @id @default(cuid())
+  partyId                   String
+  categoryId                String
+  catchPhrase               String
+  shortDescription          String
+  longDescription           String
+  budgetDeltaVsActive       Float
+  monthsToComplete          Int
+  taxNarrative              String
+  isContinuationOfStatusQuo Boolean          @default(false)
+  createdByUserId           String
+  createdAt                 DateTime         @default(now())
+  draftVotingMonth          String?
+  PartyDraftVote            PartyDraftVote[]
+  User                      User             @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  Category                  Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  Party                     Party            @relation(fields: [partyId], references: [id], onDelete: Cascade)
+}
+
+model PartyUpvote {
+  id        String   @id @default(cuid())
+  userId    String
+  partyId   String
+  nationId  String
+  createdAt DateTime @default(now())
+  Nation    Nation   @relation(fields: [nationId], references: [id], onDelete: Cascade)
+  Party     Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, partyId])
+}
+
+model User {
+  id                    String                  @id @default(cuid())
+  email                 String                  @unique
+  passwordHash          String
+  /// Unique public player tag (display names are not unique).
+  publicCode            String                  @unique
+  displayName           String
+  role                  String                  @default("VOTER")
+  nationId              String?
+  nationCommitYear      Int?
+  createdAt             DateTime                @default(now())
+  Party                 Party?
+  PartyDraftVote        PartyDraftVote[]
+  PartyMember           PartyMember?
+  PartyPolicyDraft      PartyPolicyDraft[]
+  PartyUpvote           PartyUpvote[]
+  Nation                Nation?                 @relation(fields: [nationId], references: [id])
+  UserCategoryMonthVote UserCategoryMonthVote[]
+}
+
+model UserCategoryMonthVote {
+  id             String       @id @default(cuid())
+  userId         String
+  nationId       String
+  year           Int
+  month          String
+  categorySlug   String
+  // Policy the voter picked; drives per-nation active-law tallies for this year.
+  partyPolicyId  String?
+  createdAt      DateTime     @default(now())
+  Nation         Nation       @relation(fields: [nationId], references: [id], onDelete: Cascade)
+  User           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PartyPolicy    PartyPolicy? @relation(fields: [partyPolicyId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, month, categorySlug])
+}
