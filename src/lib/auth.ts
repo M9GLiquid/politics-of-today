@@ -2,6 +2,13 @@ import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 import * as jose from "jose";
 import type { JWTPayload } from "jose";
+import {
+  applyAdminPreviewToSession,
+  isDeveloperPreviewEnvironment,
+  readAdminPreviewCookieState,
+  userIsDeveloper,
+} from "@/lib/admin-preview";
+import { buildSessionUserForUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/types/game";
 
@@ -134,27 +141,46 @@ export async function readSessionToken(
 }
 
 /**
- * Returns the current session only if the JWT verifies and a matching User row exists.
- * If the JWT is valid but the user row is missing (e.g. DB reseed), returns null without
- * mutating cookies — Server Components may not call `cookies().set`. Use
- * `purgeOrphanSessionCookie` from a Server Action to clear the stale cookie.
+ * Session from the login JWT only (no administrator preview / impersonation).
+ * Use for permission checks that must refer to the real signed-in account.
  */
-export async function getSession(): Promise<SessionUser | null> {
+export async function getJwtSession(): Promise<SessionUser | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   const session = await readSessionToken(token);
   if (!session) return null;
 
-  const userExists = await prisma.user.findUnique({
+  const userRow = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { id: true },
+    select: { id: true, bannedAt: true },
   });
-  if (!userExists) {
+  if (!userRow || userRow.bannedAt) {
     return null;
   }
 
   return session;
+}
+
+/**
+ * Effective session for the request: JWT session plus optional developer preview
+ * (session lens + impersonation / strip nation) when enabled and allowed.
+ */
+export async function getSession(): Promise<SessionUser | null> {
+  const jwtSession = await getJwtSession();
+  if (!jwtSession) return null;
+
+  if (
+    isDeveloperPreviewEnvironment() &&
+    (await userIsDeveloper(jwtSession.sub, jwtSession.email))
+  ) {
+    const preview = await readAdminPreviewCookieState();
+    const lens = preview.sessionLens;
+    if (lens === "guest") return null;
+    if (lens === "staff") return jwtSession;
+  }
+
+  return applyAdminPreviewToSession(jwtSession);
 }
 
 export async function setSessionCookie(token: string): Promise<void> {
@@ -171,4 +197,18 @@ export async function clearSessionCookie(): Promise<void> {
     ...sessionCookieBase(),
     maxAge: 0,
   });
+}
+
+/**
+ * Re-issue the login JWT from the database for the **cookie owner** (not an impersonated user).
+ * Call after mutations when preview mode may be active.
+ */
+export async function refreshJwtSessionCookie(): Promise<boolean> {
+  const jwt = await getJwtSession();
+  if (!jwt) return false;
+  const next = await buildSessionUserForUserId(jwt.sub);
+  if (!next) return false;
+  const token = await signSession(next);
+  await setSessionCookie(token);
+  return true;
 }

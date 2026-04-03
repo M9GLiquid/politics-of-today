@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { GameAdminDeletePartyButton } from "@/components/game-admin-delete-party-button";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { viewerIsGameAdministrator } from "@/lib/game-admin-viewer";
 import { listRankedNonSystemParties } from "@/lib/ballot-parties";
 import { TOP_PARTY_BALLOT_SIZE } from "@/lib/constants";
 import { listCategoriesOrdered } from "@/lib/db/catalog";
@@ -37,6 +39,7 @@ export default async function PartyProfilePage({ params }: Props) {
   if (!party) notFound();
 
   const session = await getSession();
+  const isGameAdminViewer = await viewerIsGameAdministrator();
   const categories = await listCategoriesOrdered();
 
   const ranked = await listRankedNonSystemParties(session?.nationId ?? null);
@@ -82,7 +85,7 @@ export default async function PartyProfilePage({ params }: Props) {
 
   const roster = await prisma.partyMember.findMany({
     where: { partyId: party.id },
-    include: { User: { select: { displayName: true } } },
+    include: { User: { select: { id: true, displayName: true } } },
     orderBy: { createdAt: "asc" },
   });
 
@@ -90,7 +93,7 @@ export default async function PartyProfilePage({ params }: Props) {
     party.ownerUserId != null
       ? await prisma.user.findUnique({
           where: { id: party.ownerUserId },
-          select: { displayName: true },
+          select: { id: true, displayName: true },
         })
       : null;
 
@@ -154,19 +157,24 @@ export default async function PartyProfilePage({ params }: Props) {
           ) : null}
         </div>
         {!party.isSystem ? (
-          <PartyUpvoteButton
-            partyId={party.id}
-            initialCount={nationUpvotes}
-            initialUpvoted={!!myUp}
-            disabled={!session || !session.nationId}
-            disabledHint={
-              !session
-                ? "Log in to vote"
-                : !session.nationId
-                  ? "Pick a nation (Account)"
-                  : undefined
-            }
-          />
+          <div className="flex shrink-0 flex-col items-end gap-3 sm:flex-row sm:items-start">
+            {isGameAdminViewer ? (
+              <GameAdminDeletePartyButton partyId={party.id} partyLabel={party.name} />
+            ) : null}
+            <PartyUpvoteButton
+              partyId={party.id}
+              initialCount={nationUpvotes}
+              initialUpvoted={!!myUp}
+              disabled={!session || !session.nationId}
+              disabledHint={
+                !session
+                  ? "Log in to vote"
+                  : !session.nationId
+                    ? "Pick a nation (Account)"
+                    : undefined
+              }
+            />
+          </div>
         ) : null}
       </header>
 
@@ -189,17 +197,35 @@ export default async function PartyProfilePage({ params }: Props) {
           <ul className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
             {party.ownerUserId && ownerPublic && !founderInRoster ? (
               <li>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                  {ownerPublic.displayName}
-                </span>{" "}
+                {isGameAdminViewer ? (
+                  <Link
+                    href={`/admin/player/${ownerPublic.id}`}
+                    className="font-medium text-teal-700 underline dark:text-teal-400"
+                  >
+                    {ownerPublic.displayName}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    {ownerPublic.displayName}
+                  </span>
+                )}{" "}
                 <span className="text-xs text-zinc-500">(founder)</span>
               </li>
             ) : null}
             {roster.map((m) => (
               <li key={m.id}>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                  {m.User.displayName}
-                </span>{" "}
+                {isGameAdminViewer ? (
+                  <Link
+                    href={`/admin/player/${m.userId}`}
+                    className="font-medium text-teal-700 underline dark:text-teal-400"
+                  >
+                    {m.User.displayName}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    {m.User.displayName}
+                  </span>
+                )}{" "}
                 <span className="text-xs text-zinc-500">
                   ({m.rank.replace("_", "-")})
                 </span>

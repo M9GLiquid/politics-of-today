@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { resolveUserNationIdForSession } from "@/lib/ensure-user-nation-from-session";
+import { assertUserNotBannedOrMuted } from "@/lib/moderation";
 import { prisma } from "@/lib/prisma";
 
 export async function togglePartyUpvote(
@@ -14,6 +15,15 @@ export async function togglePartyUpvote(
   const session = await getSession();
   if (!session) {
     return { ok: false, error: "auth" };
+  }
+
+  const mod = await assertUserNotBannedOrMuted(session.sub);
+  if (!mod.ok) {
+    return {
+      ok: false,
+      error:
+        mod.reason === "muted" ? "muted" : "Your account cannot perform this action.",
+    };
   }
 
   const nationId = await resolveUserNationIdForSession(session);

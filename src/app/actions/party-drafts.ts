@@ -125,22 +125,17 @@ export async function voteForDraft(
   return { ok: true };
 }
 
-/** Founder-only: push one draft live immediately (bypasses monthly tally). */
-export async function publishDraft(
+/**
+ * Push draft to published PartyPolicy (same as founder emergency publish).
+ * Caller must enforce access (party owner or admin dock).
+ */
+export async function publishDraftUnchecked(
   draftId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const session = await getSession();
-  if (!session) return { ok: false, error: "auth" };
-
   const draft = await prisma.partyPolicyDraft.findUnique({
     where: { id: draftId },
   });
   if (!draft) return { ok: false, error: "Draft not found." };
-
-  const owner = await isPartyOwner(session.sub, draft.partyId);
-  if (!owner) {
-    return { ok: false, error: "Only the founder can use emergency publish." };
-  }
 
   const categorySlug = (
     await prisma.category.findUnique({
@@ -200,4 +195,24 @@ export async function publishDraft(
   }
 
   return { ok: true };
+}
+
+/** Founder-only: push one draft live immediately (bypasses monthly tally). */
+export async function publishDraft(
+  draftId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "auth" };
+
+  const draft = await prisma.partyPolicyDraft.findUnique({
+    where: { id: draftId },
+  });
+  if (!draft) return { ok: false, error: "Draft not found." };
+
+  const owner = await isPartyOwner(session.sub, draft.partyId);
+  if (!owner) {
+    return { ok: false, error: "Only the founder can use emergency publish." };
+  }
+
+  return publishDraftUnchecked(draftId);
 }

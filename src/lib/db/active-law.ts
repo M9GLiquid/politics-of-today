@@ -238,3 +238,90 @@ export async function mergedCategoryBudgetDeltasForNation(
   );
   return { merged, winners };
 }
+
+export type AdminActiveLawSummaryRow = {
+  categorySlug: string;
+  categoryName: string;
+  line: string;
+};
+
+/** Read-only lines for admin debug: plurality vs baseline, vote counts, policy headline. */
+export async function adminActiveLawSummaryForNation(
+  nationId: string | null,
+  year: number,
+  categories: Category[],
+): Promise<AdminActiveLawSummaryRow[]> {
+  if (!nationId) {
+    return categories.map((c) => ({
+      categorySlug: c.slug,
+      categoryName: c.name,
+      line: "No nation on effective session (per-nation tallies only).",
+    }));
+  }
+
+  const [baselineIds, winners, tallyRows] = await Promise.all([
+    baselinePolicyIdByCategory(),
+    winningPolicyIdMapForNation(nationId, year, categories),
+    prisma.userCategoryMonthVote.groupBy({
+      by: ["categorySlug", "partyPolicyId"],
+      where: {
+        nationId,
+        year,
+        partyPolicyId: { not: null },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+
+  function votesFor(slug: string, policyId: string): number {
+    let sum = 0;
+    for (const row of tallyRows) {
+      if (row.categorySlug === slug && row.partyPolicyId === policyId) {
+        sum += row._count._all;
+      }
+    }
+    return sum;
+  }
+
+  const policyIds = new Set<string>();
+  for (const c of categories) {
+    const id = winners.get(c.id) ?? baselineIds.get(c.id);
+    if (id) policyIds.add(id);
+  }
+  const policies = await prisma.partyPolicy.findMany({
+    where: { id: { in: [...policyIds] } },
+    select: {
+      id: true,
+      catchPhrase: true,
+      Party: { select: { shortName: true } },
+    },
+  });
+  const policyById = new Map(policies.map((p) => [p.id, p]));
+
+  return categories.map((c) => {
+    const policyId = winners.get(c.id) ?? baselineIds.get(c.id);
+    const p = policyId ? policyById.get(policyId) : undefined;
+    const party = p?.Party?.shortName ?? "—";
+    const rawPhrase = p?.catchPhrase?.trim();
+    const phrase =
+      rawPhrase && rawPhrase.length > 0
+        ? rawPhrase
+        : policyId
+          ? `${policyId.slice(0, 10)}…`
+          : "—";
+    const v = policyId ? votesFor(c.slug, policyId) : 0;
+    const fromWinnersMap = winners.has(c.id);
+    const tag = fromWinnersMap
+      ? v > 0
+        ? "Plurality"
+        : "Leading (0 tallied)"
+      : "Baseline";
+    const shortPhrase =
+      phrase.length > 44 ? `${phrase.slice(0, 44)}…` : phrase;
+    return {
+      categorySlug: c.slug,
+      categoryName: c.name,
+      line: `${tag} · ${v} vote(s) · ${party}: ${shortPhrase}`,
+    };
+  });
+}

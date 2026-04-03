@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession, signSession, setSessionCookie } from "@/lib/auth";
+import {
+  getJwtSession,
+  getSession,
+  refreshJwtSessionCookie,
+} from "@/lib/auth";
 import { buildSessionUserForUserId } from "@/lib/auth-session";
 import {
   canChangeNation,
@@ -51,11 +55,7 @@ export async function changeNation(
     ]);
   } else {
     if (user.nationId === nation.id) {
-      const nextSame = await buildSessionUserForUserId(session.sub);
-      if (nextSame) {
-        const tokenSame = await signSession(nextSame);
-        await setSessionCookie(tokenSame);
-      }
+      await refreshJwtSessionCookie();
       revalidatePath("/");
       revalidatePath("/parties");
       revalidatePath("/account/nation");
@@ -80,12 +80,10 @@ export async function changeNation(
     ]);
   }
 
-  const next = await buildSessionUserForUserId(session.sub);
-  if (!next) {
+  const refreshed = await refreshJwtSessionCookie();
+  if (!refreshed) {
     return { ok: false, error: "auth" };
   }
-  const token = await signSession(next);
-  await setSessionCookie(token);
 
   revalidatePath("/");
   revalidatePath("/parties");
@@ -100,23 +98,22 @@ export async function changeNation(
  * but cookie still missing nationId). No-op when already in sync.
  */
 export async function reconcileSessionCookie(): Promise<{ updated: boolean }> {
-  const session = await getSession();
-  if (!session) return { updated: false };
+  const jwt = await getJwtSession();
+  if (!jwt) return { updated: false };
 
-  const next = await buildSessionUserForUserId(session.sub);
+  const next = await buildSessionUserForUserId(jwt.sub);
   if (!next) return { updated: false };
 
   const inSync =
-    session.nationId === next.nationId &&
-    session.nationSlug === next.nationSlug &&
-    (session.nationName ?? "") === (next.nationName ?? "") &&
-    session.partyId === next.partyId &&
-    session.partyAffiliationLabel === next.partyAffiliationLabel &&
-    (session.playerCode ?? "") === (next.playerCode ?? "");
+    jwt.nationId === next.nationId &&
+    jwt.nationSlug === next.nationSlug &&
+    (jwt.nationName ?? "") === (next.nationName ?? "") &&
+    jwt.partyId === next.partyId &&
+    jwt.partyAffiliationLabel === next.partyAffiliationLabel &&
+    (jwt.playerCode ?? "") === (next.playerCode ?? "");
 
   if (inSync) return { updated: false };
 
-  const token = await signSession(next);
-  await setSessionCookie(token);
+  await refreshJwtSessionCookie();
   return { updated: true };
 }

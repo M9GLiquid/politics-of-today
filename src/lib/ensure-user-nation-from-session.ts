@@ -1,5 +1,4 @@
-import { signSession, setSessionCookie } from "@/lib/auth";
-import { buildSessionUserForUserId } from "@/lib/auth-session";
+import { refreshJwtSessionCookie } from "@/lib/auth";
 import { currentCalendarYear, getNationBySlug } from "@/lib/nations";
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/types/game";
@@ -43,11 +42,7 @@ export async function resolveUserNationIdForSession(
     },
   });
 
-  const next = await buildSessionUserForUserId(session.sub);
-  if (next) {
-    const token = await signSession(next);
-    await setSessionCookie(token);
-  }
+  await refreshJwtSessionCookie();
 
   return nation.id;
 }

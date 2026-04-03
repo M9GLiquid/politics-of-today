@@ -3,6 +3,7 @@ import type { NextResponse } from "next/server";
 import type { SessionUser } from "@/types/game";
 import { resolveUserNationIdForSession } from "@/lib/ensure-user-nation-from-session";
 import { votingMonthLabel } from "@/lib/voting-month";
+import { assertUserNotBannedOrMuted } from "@/lib/moderation";
 import { prisma } from "@/lib/prisma";
 
 const COOKIE = "pot_vote_progress";
@@ -112,6 +113,10 @@ export async function appendCompletedCategory(
 ): Promise<{ ok: boolean; reason?: string }> {
   if (!session) {
     return { ok: false, reason: "guest" };
+  }
+  const mod = await assertUserNotBannedOrMuted(session.sub);
+  if (!mod.ok) {
+    return { ok: false, reason: mod.reason === "muted" ? "muted" : "banned" };
   }
   const nationId = await resolveUserNationIdForSession(session);
   if (!nationId) {

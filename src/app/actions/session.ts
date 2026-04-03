@@ -3,15 +3,10 @@
 import { cookies } from "next/headers";
 import {
   clearSessionCookie,
-  getSession,
   readSessionToken,
   SESSION_COOKIE_NAME,
-  signSession,
-  setSessionCookie,
 } from "@/lib/auth";
-import { buildSessionUserForUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { clearVoteProgressCookie } from "@/lib/progress";
 
 /**
  * Clears pot_session when the JWT verifies but no User row exists (allowed in Server Actions only).
@@ -35,27 +30,4 @@ export async function purgeOrphanSessionCookie(): Promise<{ purged: boolean }> {
   }
   await clearSessionCookie();
   return { purged: true };
-}
-
-/** Re-issue JWT from the database (fixes stale claims; resets 7-day expiry). */
-export async function refreshSessionFromDatabase(): Promise<
-  { ok: true } | { ok: false; error: string }
-> {
-  const session = await getSession();
-  if (!session) {
-    return { ok: false, error: "not_signed_in" };
-  }
-  const next = await buildSessionUserForUserId(session.sub);
-  if (!next) {
-    return { ok: false, error: "no_user" };
-  }
-  const token = await signSession(next);
-  await setSessionCookie(token);
-  return { ok: true };
-}
-
-/** Clears the httpOnly vote-progress cookie for this browser only. */
-export async function clearVoteProgressForDevice(): Promise<{ ok: true }> {
-  await clearVoteProgressCookie();
-  return { ok: true };
 }

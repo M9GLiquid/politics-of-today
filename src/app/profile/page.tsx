@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { SessionTools } from "@/components/session-tools";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { listCategoriesOrdered } from "@/lib/db/catalog";
@@ -191,8 +190,6 @@ export default async function ProfilePage() {
             </ul>
           )}
         </section>
-
-      <SessionTools />
 
       {user.Party ? (
         <section className="mt-8">

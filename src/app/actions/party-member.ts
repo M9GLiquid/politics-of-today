@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession, setSessionCookie, signSession } from "@/lib/auth";
-import { buildSessionUserForUserId } from "@/lib/auth-session";
+import { getSession, refreshJwtSessionCookie } from "@/lib/auth";
 import { resolveUserNationIdForSession } from "@/lib/ensure-user-nation-from-session";
 import { isPartyOwner } from "@/lib/party-access";
+import { assertUserNotBannedOrMuted } from "@/lib/moderation";
 import { prisma } from "@/lib/prisma";
 
 export async function joinParty(
@@ -12,6 +12,17 @@ export async function joinParty(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const session = await getSession();
   if (!session) return { ok: false, error: "auth" };
+
+  const mod = await assertUserNotBannedOrMuted(session.sub);
+  if (!mod.ok) {
+    return {
+      ok: false,
+      error:
+        mod.reason === "muted"
+          ? "Your account is muted — you cannot join a party right now."
+          : "Your account cannot perform this action.",
+    };
+  }
 
   const nationId = await resolveUserNationIdForSession(session);
   if (!nationId) {
@@ -45,11 +56,7 @@ export async function joinParty(
     data: { userId: session.sub, partyId, rank: "MEMBER" },
   });
 
-  const nextSession = await buildSessionUserForUserId(session.sub);
-  if (nextSession) {
-    const token = await signSession(nextSession);
-    await setSessionCookie(token);
-  }
+  await refreshJwtSessionCookie();
 
   revalidatePath("/parties");
   revalidatePath(`/parties/${party.slug}`);
@@ -82,11 +89,7 @@ export async function leaveParty(): Promise<
 
   await prisma.partyMember.delete({ where: { id: row.id } });
 
-  const nextSession = await buildSessionUserForUserId(session.sub);
-  if (nextSession) {
-    const token = await signSession(nextSession);
-    await setSessionCookie(token);
-  }
+  await refreshJwtSessionCookie();
 
   revalidatePath("/parties");
   revalidatePath(`/parties/${row.Party.slug}`);

@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession, signSession, setSessionCookie } from "@/lib/auth";
-import { buildSessionUserForUserId } from "@/lib/auth-session";
+import { getSession, refreshJwtSessionCookie } from "@/lib/auth";
 import { resolveUserNationIdForSession } from "@/lib/ensure-user-nation-from-session";
 import { PARTY_RANK_PM } from "@/lib/party-ranks";
 import { prisma } from "@/lib/prisma";
@@ -98,13 +97,10 @@ export async function registerParty(input: {
     });
   });
 
-  const nextSession = await buildSessionUserForUserId(user.id);
-  if (!nextSession) {
+  const refreshed = await refreshJwtSessionCookie();
+  if (!refreshed) {
     return { ok: false, error: "Could not refresh session." };
   }
-
-  const token = await signSession(nextSession);
-  await setSessionCookie(token);
 
   revalidatePath("/");
   revalidatePath("/parties");

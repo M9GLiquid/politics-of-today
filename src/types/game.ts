@@ -60,4 +60,12 @@ export type SessionUser = {
   /** Display name for header link (falls back to title-cased slug if missing in legacy JWT). */
   nationName?: string;
   nationCommitYear?: number;
+  /**
+   * Developer preview: effective session differs from the signed-in account.
+   * Only set when `ADMIN_PREVIEW_ENABLED` and developer tools are active (dev/staging).
+   */
+  adminMeta?: {
+    realSub: string;
+    realEmail: string;
+  };
 };

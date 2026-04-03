@@ -12,7 +12,7 @@ export async function buildSessionUserForUserId(
     where: { id: userId },
     include: { Nation: { select: { slug: true, name: true } } },
   });
-  if (!user) return null;
+  if (!user || user.bannedAt) return null;
   const owned = await prisma.party.findFirst({
     where: { ownerUserId: user.id },
     select: { id: true },

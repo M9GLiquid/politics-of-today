@@ -33,6 +33,10 @@ export function PartyUpvoteButton({
         setHint("Choose a nation (Account) to upvote.");
         return;
       }
+      if (!res.ok && res.error === "muted") {
+        setHint("Your account is muted — upvoting is disabled for now.");
+        return;
+      }
       router.refresh();
     });
   }

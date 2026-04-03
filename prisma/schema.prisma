@@ -159,6 +159,15 @@ model User {
   publicCode            String                  @unique
   displayName           String
   role                  String                  @default("VOTER")
+  /// Developer dock + session lens (Guest/User/Staff) when `ADMIN_PREVIEW_ENABLED` and JWT allowlist / this flag.
+  isAdministrator       Boolean                 @default(false)
+  /// Game admin panel (support lookup, no impersonation) when `GAME_ADMIN_UI_ENABLED` and this flag.
+  isGameAdministrator   Boolean                 @default(false)
+  /// When set, the account cannot sign in and existing sessions are rejected.
+  bannedAt              DateTime?
+  banReason             String                  @default("")
+  /// When set and in the future, certain actions (votes, joins, upvotes) are blocked.
+  mutedUntil            DateTime?
   nationId              String?
   nationCommitYear      Int?
   createdAt             DateTime                @default(now())

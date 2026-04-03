@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { GameAdminDeletePartyButton } from "@/components/game-admin-delete-party-button";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { viewerIsGameAdministrator } from "@/lib/game-admin-viewer";
 import { ballotIdSetFromRanked } from "@/lib/ballot-parties";
 import { TOP_PARTY_BALLOT_SIZE } from "@/lib/constants";
 import { PartyUpvoteButton } from "@/components/party-upvote-button";
@@ -15,6 +17,7 @@ export default async function PartiesPage({
   const { q } = await searchParams;
   const query = (q ?? "").trim();
   const session = await getSession();
+  const isGameAdminViewer = await viewerIsGameAdministrator();
   const viewerNationId = session?.nationId ?? null;
 
   const parties = await prisma.party.findMany({
@@ -202,19 +205,28 @@ export default async function PartiesPage({
                   {viewerNationId ? " in your nation" : " (all nations)"}
                 </p>
               </div>
-              <PartyUpvoteButton
-                partyId={p.id}
-                initialCount={p._count.PartyUpvote}
-                initialUpvoted={myUpvotes.has(p.id)}
-                disabled={!session || !session.nationId}
-                disabledHint={
-                  !session
-                    ? "Log in to vote"
-                    : !session.nationId
-                      ? "Pick a nation (Account)"
-                      : undefined
-                }
-              />
+              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+                {isGameAdminViewer ? (
+                  <GameAdminDeletePartyButton
+                    partyId={p.id}
+                    partyLabel={p.name}
+                    variant="compact"
+                  />
+                ) : null}
+                <PartyUpvoteButton
+                  partyId={p.id}
+                  initialCount={p._count.PartyUpvote}
+                  initialUpvoted={myUpvotes.has(p.id)}
+                  disabled={!session || !session.nationId}
+                  disabledHint={
+                    !session
+                      ? "Log in to vote"
+                      : !session.nationId
+                        ? "Pick a nation (Account)"
+                        : undefined
+                  }
+                />
+              </div>
             </li>
           );
         })}

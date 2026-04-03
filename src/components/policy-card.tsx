@@ -61,6 +61,14 @@ export function PolicyCard({
         setMessage("Unknown category. Refresh the page.");
         return;
       }
+      if (!res.ok && res.reason === "muted") {
+        setMessage("Your account is muted — category votes are disabled for now.");
+        return;
+      }
+      if (!res.ok && res.reason === "banned") {
+        setMessage("Your account cannot vote.");
+        return;
+      }
       setMessage(
         "Vote saved for this month. It updates active law for your nation and the radar.",
       );
