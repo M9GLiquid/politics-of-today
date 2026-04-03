@@ -1,5 +1,8 @@
 # Git Commit Message Guidelines
 
+**Cursor agents:** This repo includes a skill that encodes the same rules for
+automated commits: `.cursor/skills/git-commit-messages/SKILL.md`.
+
 This document outlines best practices for writing clear, consistent commit messages based on [Chris Beams' seven rules](http://chris.beams.io/posts/git-commit/#seven-rules).
 
 ## The Seven Rules
