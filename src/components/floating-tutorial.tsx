@@ -48,9 +48,9 @@ export function FloatingTutorial() {
         </li>
         <li>
           <strong className="text-zinc-800 dark:text-zinc-200">Guests</strong>{" "}
-          can try votes; only{" "}
+          can explore cards; only{" "}
           <strong className="text-zinc-800 dark:text-zinc-200">logged-in</strong>{" "}
-          players save monthly progress.
+          voters can cast and save monthly votes.
         </li>
         <li>
           Deep dives live in the{" "}

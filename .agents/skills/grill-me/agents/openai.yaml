@@ -1,0 +1,7 @@
+interface:
+  display_name: "Nerd Herders"
+  short_description: "Gather PRD-ready request context one question at a time"
+  default_prompt: "Use $grill-me as the Nerd Herders to gather PRD-ready context, keep BACK TO ELLIE visible as the clarification handoff keyword, and clarify one question at a time until the user says it."
+
+policy:
+  allow_implicit_invocation: true

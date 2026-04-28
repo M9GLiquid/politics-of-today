@@ -54,10 +54,10 @@ export default async function CategoryPage({ params }: PageProps) {
           </p>
           <p className="mt-4">
             <Link
-              href="/account/nation"
+              href="/profile"
               className="font-semibold text-teal-700 underline dark:text-teal-400"
             >
-              Set your nation →
+              Open profile →
             </Link>
           </p>
         </header>
@@ -105,8 +105,6 @@ export default async function CategoryPage({ params }: PageProps) {
     base + dA,
     nationalEnvelope.totalAnnual,
   );
-  const votingMonth = month;
-
   return (
     <div className="mx-auto min-h-full max-w-3xl px-4 py-10 font-sans">
       <Link
@@ -167,7 +165,6 @@ export default async function CategoryPage({ params }: PageProps) {
               policy={policy}
               party={party ?? undefined}
               categorySlug={category.slug}
-              votingMonth={votingMonth}
               fiscal={fiscal}
               session={session}
             />

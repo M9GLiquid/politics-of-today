@@ -51,14 +51,6 @@ export function HeaderAuth({ session }: Props) {
         <span className="ml-1 rounded bg-zinc-200 px-1 py-0.5 text-[10px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {session.partyAffiliationLabel}
         </span>
-        {session.adminMeta ? (
-          <span
-            className="ml-1 rounded bg-amber-200 px-1 py-0.5 text-[10px] font-semibold text-amber-950 dark:bg-amber-900/50 dark:text-amber-100"
-            title="Administrator session preview active"
-          >
-            Preview
-          </span>
-        ) : null}
       </span>
       <button
         type="button"

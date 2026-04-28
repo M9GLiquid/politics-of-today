@@ -89,15 +89,6 @@ export default async function NationsPage() {
           </li>
         ))}
       </ol>
-
-      <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
-        <Link
-          href="/account/nation"
-          className="font-medium text-teal-700 underline dark:text-teal-400"
-        >
-          Manage your nation
-        </Link>
-      </p>
     </div>
   );
 }

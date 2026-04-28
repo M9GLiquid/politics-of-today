@@ -1,6 +1,6 @@
 # Game design vision — consolidated notes
 
-This document captures high-level design direction for *Politics of Today*: policy model, player loop, **goals** (individual, nation, world), news and events, chat, and voting rules.
+This document captures high-level design direction for *Politics of Today*: policy model, player loop, **goals** (individual, nation, world), news and events, chat, voting rules, and a **running continuation** (§10–§11) for the next waves of notes.
 
 ---
 
@@ -87,6 +87,19 @@ At **the end of each in-game year** (or equivalent season boundary), the **whole
 
 World goals are **optional pressure**, not a replacement for individual or nation goals—they’re the third layer that says: *sometimes everyone needs to row the same direction or we all lose time.*
 
+### Leaderboards (cross-layer competition)
+
+To make progression and status clear, the game includes public leaderboards for parties, players, and nations.
+
+- **Party leaderboard:** ranked by **total accepted policies** (descending). The party with the most accepted policies is **Top 1**.
+- **Player leaderboard:** ranked by **current personal wealth** (descending). The richest player is **Top 1**.
+- **Nation leaderboard:** ranked by **accumulative nation wealth** (descending). The nation with the highest cumulative wealth is **Top 1**.
+
+Design notes:
+
+- Use deterministic tie-breakers (for example: earlier achievement timestamp, then stable ID) so rank order is always stable.
+- Clearly label the metric near each leaderboard title so players know exactly what “winning” means in each board.
+
 ---
 
 ## 4. World News and Nation News
@@ -113,11 +126,13 @@ A **World News** feed/room reports what the **world as a whole** experiences: **
 
 We want a **forum for people to talk**: **simple** and **live** (real-time feel), organized by **channels**:
 
-| Channel | Purpose |
-|--------|---------|
-| **World** | Global discussion, aligned with world-scale news and events. |
-| **Nation** | Discussion for people tied to a nation. |
-| **Party** | Discussion inside a party context. |
+
+| Channel    | Purpose                                                      |
+| ---------- | ------------------------------------------------------------ |
+| **World**  | Global discussion, aligned with world-scale news and events. |
+| **Nation** | Discussion for people tied to a nation.                      |
+| **Party**  | Discussion inside a party context.                           |
+
 
 Implementation details (tech stack, moderation, history retention) are TBD; the design intent is **lightweight live chat** with **clear channel boundaries**.
 
@@ -131,11 +146,13 @@ Implementation details (tech stack, moderation, history retention) are TBD; the 
 
 ## 8. Voting rules (summary)
 
-| What is being voted on | Who may vote |
-|------------------------|--------------|
-| **Any party** (national / public party choice) | **Anyone** (eligible voter per game rules). |
-| **Any policy for the nation** (national policy layer) | **Anyone** (eligible voter per game rules). |
+
+| What is being voted on                                             | Who may vote                                                                                               |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **Any party** (national / public party choice)                     | **Anyone** (eligible voter per game rules).                                                                |
+| **Any policy for the nation** (national policy layer)              | **Anyone** (eligible voter per game rules).                                                                |
 | **Policy inside the party** (party-internal drafts / party policy) | **Only members of that party** — **all member ranks** can participate (not restricted to leadership only). |
+
 
 National vs party scopes should stay explicit in UI and rules so players never confuse “nation law” votes with “our party platform” votes.
 
@@ -153,4 +170,66 @@ National vs party scopes should stay explicit in UI and rules so players never c
 
 ---
 
-*Last updated from design notes — consolidate future changes in this file or split into topic files under `docs/` if it grows large.*
+## 10. Continued notes — systems to specify next
+
+This section **extends the same notes list**: topics we implied earlier but have not fully designed. Use it as a **backlog for the next writing passes** (and eventually for implementation specs).
+
+### 10.1 Ventures (companies) as first-class entities
+
+- **Create / wind down:** rules for founding a venture (cost, cooldown, max count per player—if any).
+- **Sector tags:** each venture declares **primary sector** (single-sector) or **multiple sectors** with **weights** (multi-sector multipliers).
+- **Valuation:** how often it updates (per tick, per vote resolution, on events); what inputs (sector indices, national GDP slice, randomness).
+- **Bankruptcy:** triggers (cash runway, policy shock thresholds); what happens to the player (debt, cooldown, forced sale).
+- **Bailouts:** when the **nation** pays (automatic vs vote); how that hits **national ledger / taxes** (see §9 open questions).
+
+### 10.2 Betting the “market” (distinct from ventures?)
+
+- Clarify whether **bets** are **separate instruments** (prediction contracts, “will health funding rise?”) or **only** expressed through **ventures and inventory**.
+- If separate: **liquidity**, **counterparty** (house vs player vs pool), **resolution** tied to **observable game state** at a deadline.
+- **Influencing the nation** should still **move the same underlying meters** bets resolve against—one simulation, two playstyles.
+
+### 10.3 News pipeline (World and Nation)
+
+- **Sources:** templated lines filled from **simulation state** vs occasional **hand-authored** beats for major seasons.
+- **Ordering:** chronological feed; **pin** world goal progress; **highlight** nation-critical crises.
+- **Tone:** neutral wire-service style vs satirical—product decision.
+- **Link-out:** news items might deep-link to **relevant votes**, **sector charts**, or **World goal** meter.
+
+### 10.4 Events engine (pairs with §5)
+
+- **Catalog:** event types (shock, opportunity, scandal, natural) with **base effects** and **per-nation scaling rules** (policy modifiers, vulnerability tags).
+- **Scheduling:** fixed calendar slots vs weighted random; **visibility** (preview in World News?).
+- **Interaction with world goal:** some events could **help or hurt** the global meter (e.g. climate disaster reduces slack).
+
+### 10.5 Forum (beyond §6)
+
+- **Party channels:** visible only to **that party’s members**, or public read / member write?
+- **History:** how long messages persist; search; **quotes** vs flat live stream.
+- **Cross-posting:** whether Nation and World are separate rooms only, or **threads** with tags.
+
+### 10.6 Policy catalog transition (product note)
+
+- Current product direction includes **party-authored drafts**; long-term vision (§1) is **curated national policy assortment**. Document a **migration story**: e.g. parties become **coalition / advocacy** layers while **national ballots** pull from the global catalog—**TBD**, avoid breaking social features abruptly.
+
+---
+
+## 11. Running checklist (documented vs next)
+
+| Topic                         | Status in this doc                          | Next step                          |
+| ----------------------------- | ------------------------------------------- | ---------------------------------- |
+| National policy catalog       | §1 sketched                                 | Category list + policy card schema |
+| Ventures + multipliers        | §2 sketched                                 | §10.1 spec + numbers               |
+| Wealth paths                  | §2                                          | Align with economy model           |
+| Individual / nation / world goals | §3                                    | UI mock + meters                   |
+| World goal + season extension | §3                                          | §10.4 + exact clock                |
+| World / Nation news           | §4                                          | §10.3 pipeline                     |
+| Global events                 | §5                                          | §10.4 catalog                      |
+| Live forum                    | §6                                          | §10.5 + tech choice                |
+| Leaderboards (party/player/nation) | §3                                    | Define update cadence + tie-break UX |
+| Party size                    | §7                                          | Done for v1                        |
+| Voting scopes                 | §8                                          | Copy + UI badges                   |
+| Admin / moderation            | Not in vision doc (implemented in app)      | Link to eng doc if needed          |
+
+---
+
+*Last updated — §10–§11 continue the shared notes list; add new rows to §11 as topics firm up.*

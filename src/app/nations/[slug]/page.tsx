@@ -90,16 +90,6 @@ export default async function NationDetailPage({ params }: Props) {
           vote{voteRow === 1 ? "" : "s"} in {year} · {engagement.toFixed(1)}{" "}
           votes / voter (avg.)
         </p>
-        {session && isViewerNation ? (
-          <p className="mt-3 text-sm">
-            <Link
-              href="/account/nation"
-              className="font-medium text-teal-700 underline dark:text-teal-400"
-            >
-              Change nation (when unlocked)
-            </Link>
-          </p>
-        ) : null}
       </header>
 
       <section className="mt-10 flex min-w-0 justify-center">

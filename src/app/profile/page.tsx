@@ -113,6 +113,14 @@ export default async function ProfilePage() {
             No nation selected yet. Choose one when you vote or register.
           </p>
         )}
+        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <Link
+            href="/account/nation"
+            className="font-medium text-teal-700 underline dark:text-teal-400"
+          >
+            Change nation
+          </Link>
+        </p>
       </section>
 
       <section className="mt-8">
@@ -208,7 +216,7 @@ export default async function ProfilePage() {
                 {user.Party.name}
               </p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                {user.Party.shortName} · /{user.Party.slug}
+                {user.Party.shortName}
               </p>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                 {user.Party._count.PartyUpvote} upvotes (global)

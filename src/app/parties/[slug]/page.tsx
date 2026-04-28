@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GameAdminDeletePartyButton } from "@/components/game-admin-delete-party-button";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { viewerIsGameAdministrator } from "@/lib/game-admin-viewer";
 import { listRankedNonSystemParties } from "@/lib/ballot-parties";
 import { TOP_PARTY_BALLOT_SIZE } from "@/lib/constants";
 import { listCategoriesOrdered } from "@/lib/db/catalog";
@@ -39,7 +37,6 @@ export default async function PartyProfilePage({ params }: Props) {
   if (!party) notFound();
 
   const session = await getSession();
-  const isGameAdminViewer = await viewerIsGameAdministrator();
   const categories = await listCategoriesOrdered();
 
   const ranked = await listRankedNonSystemParties(session?.nationId ?? null);
@@ -158,22 +155,27 @@ export default async function PartyProfilePage({ params }: Props) {
         </div>
         {!party.isSystem ? (
           <div className="flex shrink-0 flex-col items-end gap-3 sm:flex-row sm:items-start">
-            {isGameAdminViewer ? (
-              <GameAdminDeletePartyButton partyId={party.id} partyLabel={party.name} />
-            ) : null}
-            <PartyUpvoteButton
-              partyId={party.id}
-              initialCount={nationUpvotes}
-              initialUpvoted={!!myUp}
-              disabled={!session || !session.nationId}
-              disabledHint={
-                !session
-                  ? "Log in to vote"
-                  : !session.nationId
-                    ? "Pick a nation (Account)"
-                    : undefined
-              }
-            />
+            {session ? (
+              <PartyUpvoteButton
+                partyId={party.id}
+                initialCount={nationUpvotes}
+                initialUpvoted={!!myUp}
+                disabled={!session.nationId}
+                disabledHint={
+                  !session.nationId ? "Pick a nation (Account)" : undefined
+                }
+              />
+            ) : (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <Link
+                  href="/login"
+                  className="font-medium text-teal-700 underline dark:text-teal-400"
+                >
+                  Log in
+                </Link>{" "}
+                to upvote
+              </p>
+            )}
           </div>
         ) : null}
       </header>
@@ -197,35 +199,17 @@ export default async function PartyProfilePage({ params }: Props) {
           <ul className="mt-3 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
             {party.ownerUserId && ownerPublic && !founderInRoster ? (
               <li>
-                {isGameAdminViewer ? (
-                  <Link
-                    href={`/admin/player/${ownerPublic.id}`}
-                    className="font-medium text-teal-700 underline dark:text-teal-400"
-                  >
-                    {ownerPublic.displayName}
-                  </Link>
-                ) : (
-                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                    {ownerPublic.displayName}
-                  </span>
-                )}{" "}
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  {ownerPublic.displayName}
+                </span>{" "}
                 <span className="text-xs text-zinc-500">(founder)</span>
               </li>
             ) : null}
             {roster.map((m) => (
               <li key={m.id}>
-                {isGameAdminViewer ? (
-                  <Link
-                    href={`/admin/player/${m.userId}`}
-                    className="font-medium text-teal-700 underline dark:text-teal-400"
-                  >
-                    {m.User.displayName}
-                  </Link>
-                ) : (
-                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                    {m.User.displayName}
-                  </span>
-                )}{" "}
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  {m.User.displayName}
+                </span>{" "}
                 <span className="text-xs text-zinc-500">
                   ({m.rank.replace("_", "-")})
                 </span>
@@ -286,13 +270,12 @@ export default async function PartyProfilePage({ params }: Props) {
                           ? "This party is not accepting new members yet (the founder can open joins on Party desk)."
                           : "Join to help propose policies and vote on what gets published."}
               </p>
-              <JoinPartyButton
-                partyId={party.id}
-                disabled={!canJoinParty}
-                disabledHint={
-                  !session
-                    ? "Log in"
-                    : !session.nationId
+              {session ? (
+                <JoinPartyButton
+                  partyId={party.id}
+                  disabled={!canJoinParty}
+                  disabledHint={
+                    !session.nationId
                       ? "Pick a nation"
                       : viewerOwnsAnyParty
                         ? "Founder — use Party desk"
@@ -301,8 +284,16 @@ export default async function PartyProfilePage({ params }: Props) {
                           : !party.allowMemberJoin
                             ? "Closed to joins"
                             : undefined
-                }
-              />
+                  }
+                />
+              ) : (
+                <Link
+                  href="/login"
+                  className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
+                >
+                  Log in to join
+                </Link>
+              )}
             </div>
           )}
         </div>

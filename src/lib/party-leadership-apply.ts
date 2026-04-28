@@ -1,11 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  COUNCIL_SEATS,
-  PARTY_RANK_COUNCIL,
-  PARTY_RANK_MEMBER,
-  PARTY_RANK_PM,
-  PARTY_RANK_VICE_PM,
-} from "@/lib/party-ranks";
+import { selectLeadershipAssignments } from "@/lib/party-governance";
 
 /**
  * Tallies `periodKey` leadership ballots and rewrites PartyMember.rank for that party.
@@ -48,49 +42,24 @@ export async function applyLeadershipElectionResults(
     const members = await prisma.partyMember.findMany({
       where: { partyId },
     });
-    const prevRank = new Map(members.map((m) => [m.userId, m.rank]));
-
-    const pmUser =
-      pmWinner ??
-      members.find((m) => m.rank === PARTY_RANK_PM)?.userId ??
-      null;
-    let viceUser =
-      viceWinner ??
-      members.find((m) => m.rank === PARTY_RANK_VICE_PM)?.userId ??
-      null;
-
-    if (viceUser === pmUser) {
-      viceUser = null;
-    }
-
-    const councilSet = new Set<string>();
-    if (anyCouncil > 0) {
-      const councilRows = await prisma.partyCouncilLeadershipVote.groupBy({
-        by: ["candidateUserId"],
-        where: { partyId, periodKey },
-        _count: { _all: true },
-      });
-      councilRows.sort((a, b) => b._count._all - a._count._all);
-      for (const row of councilRows.slice(0, COUNCIL_SEATS)) {
-        councilSet.add(row.candidateUserId);
-      }
-    } else {
-      for (const m of members) {
-        if (prevRank.get(m.userId) === PARTY_RANK_COUNCIL) {
-          councilSet.add(m.userId);
-        }
-      }
-    }
+    const councilRows =
+      anyCouncil > 0
+        ? await prisma.partyCouncilLeadershipVote.groupBy({
+            by: ["candidateUserId"],
+            where: { partyId, periodKey },
+            _count: { _all: true },
+          })
+        : [];
+    councilRows.sort((a, b) => b._count._all - a._count._all);
+    const ranksByUserId = selectLeadershipAssignments({
+      members,
+      pmWinner,
+      viceWinner,
+      councilWinners: councilRows.map((row) => row.candidateUserId),
+    });
 
     for (const m of members) {
-      let rank = PARTY_RANK_MEMBER;
-      if (pmUser && m.userId === pmUser) {
-        rank = PARTY_RANK_PM;
-      } else if (viceUser && m.userId === viceUser) {
-        rank = PARTY_RANK_VICE_PM;
-      } else if (councilSet.has(m.userId)) {
-        rank = PARTY_RANK_COUNCIL;
-      }
+      const rank = ranksByUserId.get(m.userId) ?? m.rank;
 
       if (m.rank !== rank) {
         await prisma.partyMember.update({

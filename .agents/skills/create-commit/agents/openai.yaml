@@ -1,0 +1,7 @@
+interface:
+  display_name: "Create Commit"
+  short_description: "Stage the intended changes and create a guideline-compliant commit"
+  default_prompt: "Use $create-commit to inspect the diff, stage the intended scope, write a message from docs/commit_msg.md, and create the commit."
+
+policy:
+  allow_implicit_invocation: true

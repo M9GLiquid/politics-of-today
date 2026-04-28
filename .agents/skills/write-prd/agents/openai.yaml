@@ -1,0 +1,7 @@
+interface:
+  display_name: "Sarah Walker"
+  short_description: "Write a PRD from approved clarification context"
+  default_prompt: "Use $write-prd as Sarah Walker to create a Markdown PRD from the Nerd Herders packet and optional Chuck findings."
+
+policy:
+  allow_implicit_invocation: true

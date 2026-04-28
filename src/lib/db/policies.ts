@@ -4,6 +4,22 @@ import { utcMonthKey } from "@/lib/party-months";
 import { toGameParty, toGamePolicy } from "@/lib/db/mappers";
 import type { Party, Policy } from "@/types/game";
 
+export function compareCategoryBallotPolicies(
+  a: {
+    isContinuationOfStatusQuo: boolean;
+    catchPhrase: string;
+  },
+  b: {
+    isContinuationOfStatusQuo: boolean;
+    catchPhrase: string;
+  },
+): number {
+  if (a.isContinuationOfStatusQuo !== b.isContinuationOfStatusQuo) {
+    return a.isContinuationOfStatusQuo ? -1 : 1;
+  }
+  return a.catchPhrase.localeCompare(b.catchPhrase);
+}
+
 export type PolicyWithParty = { policy: Policy; party: Party | null };
 
 export async function listPoliciesForCategoryBallot(
@@ -43,12 +59,7 @@ export async function listPoliciesForCategoryBallot(
     include: { Party: true },
   });
 
-  rows.sort((a, b) => {
-    if (a.isContinuationOfStatusQuo !== b.isContinuationOfStatusQuo) {
-      return a.isContinuationOfStatusQuo ? -1 : 1;
-    }
-    return a.catchPhrase.localeCompare(b.catchPhrase);
-  });
+  rows.sort(compareCategoryBallotPolicies);
 
   return rows.map((row) => ({
     policy: toGamePolicy(row),

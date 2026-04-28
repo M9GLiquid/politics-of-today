@@ -29,6 +29,10 @@ export function PartyUpvoteButton({
     setHint(null);
     startTransition(async () => {
       const res = await togglePartyUpvote(partyId);
+      if (!res.ok && res.error === "auth") {
+        setHint("Log in to upvote.");
+        return;
+      }
       if (!res.ok && res.error === "nation") {
         setHint("Choose a nation (Account) to upvote.");
         return;

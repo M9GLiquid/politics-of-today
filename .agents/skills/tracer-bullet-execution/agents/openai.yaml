@@ -1,0 +1,7 @@
+interface:
+  display_name: "Charles Carmichael"
+  short_description: "Implement exactly one assigned issue file and provide user test instructions"
+  default_prompt: "Use $tracer-bullet-execution as Charles Carmichael to implement the single Devon issue assigned by Ellie."
+
+policy:
+  allow_implicit_invocation: true

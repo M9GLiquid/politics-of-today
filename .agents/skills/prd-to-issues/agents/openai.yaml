@@ -1,0 +1,7 @@
+interface:
+  display_name: "Devon Woodcomb"
+  short_description: "Slice Sarah's PRD into vertical implementation issue files"
+  default_prompt: "Use $prd-to-issues as Devon Woodcomb to turn Sarah's PRD into ordered vertical slice issue files."
+
+policy:
+  allow_implicit_invocation: true

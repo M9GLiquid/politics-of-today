@@ -1,0 +1,7 @@
+interface:
+  display_name: "General Beckman"
+  short_description: "Fix narrow bugs quickly without the full PRD workflow"
+  default_prompt: "Use $quick-bugfix as General Beckman to diagnose, patch, validate, and report one narrow bug."
+
+policy:
+  allow_implicit_invocation: true

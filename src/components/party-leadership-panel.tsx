@@ -6,7 +6,11 @@ import {
   toggleCouncilLeadershipVote,
   voteLeadershipOffice,
 } from "@/app/actions/party-leadership";
-import { COUNCIL_SEATS, MAX_COUNCIL_VOTES_PER_VOTER } from "@/lib/party-ranks";
+import {
+  COUNCIL_SEATS,
+  MAX_COUNCIL_VOTES_PER_VOTER,
+  formatPartyRankForDisplay,
+} from "@/lib/party-ranks";
 
 export type LeadershipRosterRow = {
   userId: string;
@@ -27,7 +31,6 @@ type Props = {
 
 export function PartyLeadershipPanel({
   partyId,
-  periodKey,
   canVote,
   roster,
   selfUserId,
@@ -47,17 +50,12 @@ export function PartyLeadershipPanel({
         Leadership election
       </h2>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Period <span className="font-mono">{periodKey}</span> (calendar quarter,
-        UTC). Rank-and-file members vote for PM, Vice-PM, and up to{" "}
-        {MAX_COUNCIL_VOTES_PER_VOTER} council endorsements. Top {COUNCIL_SEATS}{" "}
-        council vote-getters are seated when the quarter is finalized (cron on
-        quarter start).
+        Members vote for PM, Vice-PM, and up to {MAX_COUNCIL_VOTES_PER_VOTER} council endorsements. The top {COUNCIL_SEATS} council candidates are seated.
       </p>
 
       {!canVote ? (
         <p className="mt-4 text-sm text-zinc-500">
-          Only members with the <strong>Member</strong> rank vote here. PM,
-          Vice-PM, and council focus on drafting policy.
+          Voting is available to party members with the <strong>Member</strong> rank.
         </p>
       ) : (
         <div className="mt-6 space-y-6">
@@ -87,7 +85,7 @@ export function PartyLeadershipPanel({
               <option value="">Select candidate…</option>
               {candidates.map((c) => (
                 <option key={c.userId} value={c.userId}>
-                  {c.displayName} ({c.rank})
+                  {c.displayName} ({formatPartyRankForDisplay(c.rank)})
                 </option>
               ))}
             </select>
@@ -119,7 +117,7 @@ export function PartyLeadershipPanel({
               <option value="">Select candidate…</option>
               {candidates.map((c) => (
                 <option key={c.userId} value={c.userId}>
-                  {c.displayName} ({c.rank})
+                  {c.displayName} ({formatPartyRankForDisplay(c.rank)})
                 </option>
               ))}
             </select>
@@ -152,7 +150,7 @@ export function PartyLeadershipPanel({
                           });
                         }}
                       />
-                      {c.displayName} ({c.rank})
+                      {c.displayName} ({formatPartyRankForDisplay(c.rank)})
                     </label>
                   </li>
                 );

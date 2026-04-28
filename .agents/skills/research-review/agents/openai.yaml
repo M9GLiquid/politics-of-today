@@ -1,0 +1,7 @@
+interface:
+  display_name: "Chuck Bartowski"
+  short_description: "Research PRD-critical or issue-slicing technical questions"
+  default_prompt: "Use $research-review as Chuck Bartowski to answer Ellie’s focused technical research question for Sarah, Devon, or Charles."
+
+policy:
+  allow_implicit_invocation: true

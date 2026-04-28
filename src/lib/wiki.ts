@@ -17,7 +17,7 @@ export const wikiArticles: WikiArticle[] = [
       },
       {
         heading: "Turn structure",
-        body: "Each calendar month is a voting round. You may visit every category, read proposals against the active baseline, and cast a preference. Logged-in players persist progress; guests can explore the same UI but votes are not written to the server.",
+        body: "Each calendar month is a voting round. You may visit every category and read proposals against the active baseline. Casting a preference requires a logged-in voter account.",
       },
       {
         heading: "Fiscal model (toy)",
@@ -36,7 +36,7 @@ export const wikiArticles: WikiArticle[] = [
     sections: [
       {
         heading: "Guests",
-        body: "Guests see the radar, wiki, tutorial, and full policy cards. They can click through categories and try the vote buttons for a feel of the loop. Nothing is stored for guests beyond this browser session.",
+        body: "Guests see the radar, wiki, tutorial, and full policy cards. They can click through categories, but voting actions are locked until login.",
       },
       {
         heading: "Registered voters",
@@ -87,7 +87,7 @@ export const wikiArticles: WikiArticle[] = [
       },
       {
         heading: "Completion rings",
-        body: "An open ring means you have not finalized that category for this month on this account. A check means you have submitted a vote that round (saved only when logged in). Guests see session-only completion for practice.",
+        body: "An open ring means you have not finalized that category for this month on this account. A check means you have submitted a vote that round.",
       },
     ],
   },

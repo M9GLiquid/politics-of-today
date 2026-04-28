@@ -1,0 +1,7 @@
+interface:
+  display_name: "John Casey"
+  short_description: "Review one completed issue or quick bugfix"
+  default_prompt: "Use $code-review-tracer-bullet as John Casey to review a completed issue or General Beckman quick bugfix and return approved, fixable, unclear, or blocked."
+
+policy:
+  allow_implicit_invocation: true

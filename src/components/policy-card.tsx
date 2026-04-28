@@ -1,18 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import type { FiscalImpact } from "@/lib/budget";
 import type { Party, Policy, SessionUser } from "@/types/game";
 import { submitCategoryVote } from "@/app/actions/voting";
-import { addGuestCompletedSlug } from "@/lib/guest-session";
 import { useRouter } from "next/navigation";
 
 type Props = {
   policy: Policy;
   party?: Party;
   categorySlug: string;
-  /** Calendar month key for guest session storage (must match home radar). */
-  votingMonth: string;
   fiscal: FiscalImpact;
   session: SessionUser | null;
 };
@@ -21,7 +19,6 @@ export function PolicyCard({
   policy,
   party,
   categorySlug,
-  votingMonth,
   fiscal,
   session,
 }: Props) {
@@ -33,22 +30,19 @@ export function PolicyCard({
   function vote() {
     setMessage(null);
     if (!session) {
-      addGuestCompletedSlug(categorySlug, votingMonth);
-      setMessage(
-        "Preview recorded in this tab only—log in to save your monthly progress.",
-      );
+      setMessage("Log in to cast votes.");
       return;
     }
     if (!session.nationId) {
       setMessage(
-        "Choose a nation first: open Nation in the header or go to /account/nation.",
+        "Choose a nation first on your profile before votes can count.",
       );
       return;
     }
     startTransition(async () => {
       const res = await submitCategoryVote(categorySlug, policy.id);
       if (!res.ok && res.reason === "nation") {
-        setMessage("Choose a nation at /account/nation before votes can count.");
+        setMessage("Choose a nation on your profile before votes can count.");
         return;
       }
       if (!res.ok && res.reason === "policy") {
@@ -151,19 +145,23 @@ export function PolicyCard({
       ) : null}
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={vote}
-          className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          {pending ? "Saving…" : "Cast vote for this policy"}
-        </button>
-        {!session ? (
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            Guest: preview only
-          </span>
-        ) : null}
+        {session ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={vote}
+            className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+          >
+            {pending ? "Saving…" : "Cast vote for this policy"}
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
+          >
+            Log in to vote
+          </Link>
+        )}
       </div>
       {message ? (
         <p className="mt-3 text-sm text-teal-800 dark:text-teal-200">{message}</p>

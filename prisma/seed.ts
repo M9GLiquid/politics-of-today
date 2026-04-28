@@ -27,19 +27,19 @@ async function main() {
     "This platform is a demo seed for Politics of Today.";
 
   const nOrion = await prisma.nation.create({
-    data: { slug: "orion", name: "Orion", sortOrder: 0 },
+    data: { slug: "orion", name: "Orion", sortOrder: 0, accumulativeWealth: 1320 },
   });
   const nCeleste = await prisma.nation.create({
-    data: { slug: "celeste", name: "Celeste", sortOrder: 1 },
+    data: { slug: "celeste", name: "Celeste", sortOrder: 1, accumulativeWealth: 1195 },
   });
   const nAndosian = await prisma.nation.create({
-    data: { slug: "andosian", name: "Andosian", sortOrder: 2 },
+    data: { slug: "andosian", name: "Andosian", sortOrder: 2, accumulativeWealth: 1410 },
   });
   const nVeydris = await prisma.nation.create({
-    data: { slug: "veydris", name: "Veydris", sortOrder: 3 },
+    data: { slug: "veydris", name: "Veydris", sortOrder: 3, accumulativeWealth: 1085 },
   });
   const nKethara = await prisma.nation.create({
-    data: { slug: "kethara", name: "Kethara", sortOrder: 4 },
+    data: { slug: "kethara", name: "Kethara", sortOrder: 4, accumulativeWealth: 1250 },
   });
 
   const categories = await prisma.$transaction([
@@ -150,6 +150,7 @@ async function main() {
       publicCode: await allocateUniqueUserPublicCode(),
       displayName: "Alice Voter",
       role: "VOTER",
+      wealth: 235,
       nationId: nOrion.id,
       nationCommitYear: year,
     },
@@ -162,6 +163,7 @@ async function main() {
       publicCode: await allocateUniqueUserPublicCode(),
       displayName: "Bob Voter",
       role: "VOTER",
+      wealth: 198,
       nationId: nCeleste.id,
       nationCommitYear: year,
     },
@@ -348,6 +350,7 @@ async function main() {
         publicCode: await allocateUniqueUserPublicCode(),
         displayName: `Founder ${i + 1} (${partyName})`,
         role: "VOTER",
+        wealth: 140 + (i % 9) * 22,
         nationId: nation.id,
         nationCommitYear: year,
       },
@@ -409,6 +412,7 @@ async function main() {
         publicCode: await allocateUniqueUserPublicCode(),
         displayName: `Member ${j + 1}`,
         role: "VOTER",
+        wealth: 55 + (j % 10) * 11,
         nationId: nation.id,
         nationCommitYear: year,
         PartyMember: {
@@ -471,7 +475,7 @@ async function main() {
   await prisma.partyUpvote.createMany({ data: upvoteDeduped });
 
   console.log(
-    "Seed complete: 5 nations, baseline party, 25 synthetic founder parties (3 policies each), 25 synthetic members, alice/bob.",
+    "Seed complete: 5 nations, baseline party, 25 synthetic founder parties (3 policies each), 25 synthetic members, alice/bob demo accounts.",
   );
 }
 

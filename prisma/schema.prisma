@@ -22,9 +22,15 @@ model Nation {
   slug                  String                  @unique
   name                  String
   sortOrder             Int                     @default(0)
+  /// Total all-time nation wealth used by wealth leaderboard ranking.
+  accumulativeWealth    Float                   @default(0)
   PartyUpvote           PartyUpvote[]
   User                  User[]
   UserCategoryMonthVote UserCategoryMonthVote[]
+  NewsItem              NewsItem[]
+  WorldEventNationImpact WorldEventNationImpact[]
+
+  @@index([accumulativeWealth])
 }
 
 model Party {
@@ -159,15 +165,13 @@ model User {
   publicCode            String                  @unique
   displayName           String
   role                  String                  @default("VOTER")
-  /// Developer dock + session lens (Guest/User/Staff) when `ADMIN_PREVIEW_ENABLED` and JWT allowlist / this flag.
-  isAdministrator       Boolean                 @default(false)
-  /// Game admin panel (support lookup, no impersonation) when `GAME_ADMIN_UI_ENABLED` and this flag.
-  isGameAdministrator   Boolean                 @default(false)
   /// When set, the account cannot sign in and existing sessions are rejected.
   bannedAt              DateTime?
   banReason             String                  @default("")
   /// When set and in the future, certain actions (votes, joins, upvotes) are blocked.
   mutedUntil            DateTime?
+  /// Personal wealth for player leaderboard ranking.
+  wealth                Float                   @default(0)
   nationId              String?
   nationCommitYear      Int?
   createdAt             DateTime                @default(now())
@@ -178,6 +182,8 @@ model User {
   PartyUpvote           PartyUpvote[]
   Nation                Nation?                 @relation(fields: [nationId], references: [id])
   UserCategoryMonthVote UserCategoryMonthVote[]
+
+  @@index([wealth])
 }
 
 model UserCategoryMonthVote {
@@ -195,4 +201,60 @@ model UserCategoryMonthVote {
   PartyPolicy    PartyPolicy? @relation(fields: [partyPolicyId], references: [id], onDelete: SetNull)
 
   @@unique([userId, month, categorySlug])
+}
+
+/// Published items for World News and Nation News.
+model NewsItem {
+  id          String   @id @default(cuid())
+  scope       String   // "WORLD" | "NATION"
+  nationId    String?
+  monthKey    String   // UTC month key "YYYY-MM" for sorting/grouping
+  title       String
+  body        String   @default("")
+  tagsCsv     String   @default("")
+  createdAt   DateTime @default(now())
+
+  Nation      Nation?  @relation(fields: [nationId], references: [id], onDelete: Cascade)
+
+  @@index([scope, monthKey])
+  @@index([nationId, monthKey])
+}
+
+/// A template for a world event that can fire on a calendar cadence.
+model WorldEventDefinition {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  title           String
+  description     String   @default("")
+  cadenceMonths   Int      @default(1) // 1 = monthly
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  Instance        WorldEventInstance[]
+}
+
+/// A fired instance of an event in a particular month.
+model WorldEventInstance {
+  id              String              @id @default(cuid())
+  definitionId    String
+  monthKey        String              // UTC month key "YYYY-MM"
+  createdAt       DateTime            @default(now())
+  Definition      WorldEventDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  NationImpact    WorldEventNationImpact[]
+
+  @@unique([definitionId, monthKey])
+  @@index([monthKey])
+}
+
+/// Per-nation impact payload for an event instance (stored as JSON string for now).
+model WorldEventNationImpact {
+  id            String             @id @default(cuid())
+  instanceId    String
+  nationId      String
+  payloadJson   String             @default("{}")
+  createdAt     DateTime           @default(now())
+  Instance      WorldEventInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  Nation        Nation             @relation(fields: [nationId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, nationId])
+  @@index([nationId])
 }

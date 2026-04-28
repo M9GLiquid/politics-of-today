@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { useGuestCompletedSlugs } from "@/hooks/use-guest-completed-slugs";
 import type { RadarBudgetRow } from "@/lib/budget-radar";
 import type { NationalFiscalEnvelope } from "@/lib/national-economy";
 
@@ -46,20 +45,16 @@ export function CategoryRadar({
   radarRows,
   fiscalEnvelope,
   completedSlugsServer,
-  votingMonth,
   guestMode,
   compactCopy = false,
 }: Props) {
   const router = useRouter();
-  const guestSlugs = useGuestCompletedSlugs(votingMonth);
   const rows = Array.isArray(radarRows) ? radarRows : EMPTY_RADAR_ROWS;
 
-  const completed = useMemo(() => {
-    const set = new Set<string>();
-    completedSlugsServer.forEach((s) => set.add(s));
-    if (guestMode) guestSlugs.forEach((s) => set.add(s));
-    return set;
-  }, [completedSlugsServer, guestMode, guestSlugs]);
+  const completed = useMemo(
+    () => new Set(completedSlugsServer),
+    [completedSlugsServer],
+  );
 
   const data = rows;
 
@@ -230,7 +225,7 @@ export function CategoryRadar({
             ) : null}{" "}
             Teal <span className="font-medium text-teal-800 dark:text-teal-200">voted</span> labels
             match your month (
-            {guestMode ? "guest: this tab only" : "saved when logged in"}).
+            {guestMode ? "log in to record votes" : "saved when logged in"}).
           </p>
         ) : (
           <>
@@ -279,7 +274,7 @@ export function CategoryRadar({
                 voted
               </span>{" "}
               mean you recorded this month; plain labels are still open (
-              {guestMode ? "guest: tab session only" : "saved when logged in"}).
+              {guestMode ? "log in to record votes" : "saved when logged in"}).
             </p>
           </>
         )}

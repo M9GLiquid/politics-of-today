@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
+import { PARTY_RULES } from "@/lib/constants";
 import { isPartyOwner } from "@/lib/party-access";
 import { prisma } from "@/lib/prisma";
-
-const MIN_LEN = 80;
 
 export async function updatePartyDescription(
   partyId: string,
@@ -20,10 +19,10 @@ export async function updatePartyDescription(
   }
 
   const text = description.trim();
-  if (text.length < MIN_LEN) {
+  if (text.length < PARTY_RULES.descriptionMinLength) {
     return {
       ok: false,
-      error: `Party description must be at least ${MIN_LEN} characters.`,
+      error: `Party description must be at least ${PARTY_RULES.descriptionMinLength} characters.`,
     };
   }
 

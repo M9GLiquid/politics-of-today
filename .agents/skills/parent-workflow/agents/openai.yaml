@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ellie Bartowski"
+  short_description: "Route the workflow through Nerds, PRD, issues, implementation, and review"
+  default_prompt: "Use $parent-workflow as Ellie Bartowski to coordinate the request, spawn the Nerd Herders for clarification with BACK TO ELLIE visible, route Sarah for PRD writing, Devon for PRD-to-issues, Charles for one issue, and John for review."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,68 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import type { Category } from "@/types/game";
 import { getSystemPartyId } from "@/lib/ballot-parties";
-
-/**
- * Categories with at least one recorded policy vote use the plurality winner;
- * others keep the global system status-quo deltas.
- */
-export function mergeActiveLawDeltasForNation(
-  activePartial: Map<string, number> | undefined,
-  statusQuo: Map<string, number>,
-  categories: Category[],
-): Map<string, number> {
-  const out = new Map<string, number>();
-  for (const c of categories) {
-    if (activePartial?.has(c.id)) {
-      out.set(c.id, activePartial.get(c.id)!);
-    } else {
-      out.set(c.id, statusQuo.get(c.id) ?? 0);
-    }
-  }
-  return out;
-}
-
-type SlugTally = {
-  categorySlug: string;
-  partyPolicyId: string | null;
-  _count: { _all: number };
-};
-
-/**
- * For each category, pick the PartyPolicy with the most votes this year.
- * Ties prefer the system status-quo row when it is tied; otherwise lowest id.
- */
-export function winningPolicyIdsFromSlugTallies(
-  tallies: SlugTally[],
-  slugToCategoryId: Map<string, string>,
-  baselinePolicyIdByCategoryId: Map<string, string>,
-): Map<string, string> {
-  const bySlug = new Map<string, Array<{ policyId: string; count: number }>>();
-  for (const row of tallies) {
-    if (!row.partyPolicyId) continue;
-    if (!slugToCategoryId.has(row.categorySlug)) continue;
-    const list = bySlug.get(row.categorySlug) ?? [];
-    list.push({ policyId: row.partyPolicyId, count: row._count._all });
-    bySlug.set(row.categorySlug, list);
-  }
-
-  const categoryIdToPolicyId = new Map<string, string>();
-  for (const [slug, candidates] of bySlug) {
-    const categoryId = slugToCategoryId.get(slug);
-    if (!categoryId) continue;
-    const maxCount = Math.max(...candidates.map((c) => c.count));
-    const top = candidates.filter((c) => c.count === maxCount);
-    const baselineId = baselinePolicyIdByCategoryId.get(categoryId);
-    let winner: string;
-    if (baselineId && top.some((t) => t.policyId === baselineId)) {
-      winner = baselineId;
-    } else {
-      winner = top.map((t) => t.policyId).sort()[0]!;
-    }
-    categoryIdToPolicyId.set(categoryId, winner);
-  }
-  return categoryIdToPolicyId;
-}
+import {
+  categoryDeltaMapFromWinners,
+  mergeActiveLawDeltas,
+  winningPolicyIdsByCategoryFromSlugTallies,
+} from "@/lib/active-law/helpers";
 
 async function baselinePolicyIdByCategory(): Promise<Map<string, string>> {
   const systemId = await getSystemPartyId();
@@ -97,18 +40,6 @@ async function policyDeltasForIds(
   );
 }
 
-function categoryDeltaMapFromWinners(
-  winners: Map<string, string>,
-  policyInfo: Map<string, { categoryId: string; budgetDeltaVsActive: number }>,
-): Map<string, number> {
-  const out = new Map<string, number>();
-  for (const [categoryId, policyId] of winners) {
-    const p = policyInfo.get(policyId);
-    out.set(categoryId, p?.budgetDeltaVsActive ?? 0);
-  }
-  return out;
-}
-
 /** Plurality-winning PartyPolicy id per category (categoryId → id) for this nation and year. */
 export async function winningPolicyIdMapForNation(
   nationId: string,
@@ -128,7 +59,7 @@ export async function winningPolicyIdMapForNation(
       _count: { _all: true },
     }),
   ]);
-  return winningPolicyIdsFromSlugTallies(
+  return winningPolicyIdsByCategoryFromSlugTallies(
     tallies,
     slugToCategoryId,
     baselineIds,
@@ -158,6 +89,15 @@ export async function activeLawBudgetDeltaMapForNation(
   const winners = await winningPolicyIdMapForNation(nationId, year, categories);
   const policyInfo = await policyDeltasForIds(winners.values());
   return categoryDeltaMapFromWinners(winners, policyInfo);
+}
+
+/** Compatibility export kept for callers that already use the DB-facing merge helper. */
+export function mergeActiveLawDeltasForNation(
+  activePartial: Map<string, number> | undefined,
+  statusQuo: Map<string, number>,
+  categories: Category[],
+): Map<string, number> {
+  return mergeActiveLawDeltas(activePartial, statusQuo, categories);
 }
 
 /** Same as repeated `activeLawBudgetDeltaMapForNation`, one groupBy for all nations. */
@@ -199,7 +139,7 @@ export async function activeLawBudgetDeltasByNationForYear(
   const winnersPerNation = new Map<string, Map<string, string>>();
   const allWinnerIds = new Set<string>();
   for (const [nationId, nationTallies] of byNation) {
-    const winners = winningPolicyIdsFromSlugTallies(
+    const winners = winningPolicyIdsByCategoryFromSlugTallies(
       nationTallies,
       slugToCategoryId,
       baselineIds,
@@ -231,7 +171,7 @@ export async function mergedCategoryBudgetDeltasForNation(
   }
   const policyInfo = await policyDeltasForIds(winners.values());
   const activePartial = categoryDeltaMapFromWinners(winners, policyInfo);
-  const merged = mergeActiveLawDeltasForNation(
+  const merged = mergeActiveLawDeltas(
     activePartial.size > 0 ? activePartial : undefined,
     statusQuo,
     categories,

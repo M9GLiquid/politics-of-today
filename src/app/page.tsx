@@ -75,17 +75,19 @@ export default async function Home() {
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             Join one of five nations for the yearly run. Party rankings and
             ballots count upvotes only from your nation; switch nation after the
-            calendar year ends. Guests preview in-session only. Swipe the radar
+            calendar year ends. Guests can browse categories and policies; only
+            logged-in voters can cast votes. Swipe the radar
             or use the arrows to compare each nation&apos;s budget.
           </p>
           {session && voterNeedsNationPick(session.role, session.nationId) ? (
             <p className="mt-4 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
-              Choose a nation to unlock votes that count for your team.{" "}
+              Choose a nation on your profile to unlock votes that count for your
+              team.{" "}
               <Link
-                href="/account/nation"
+                href="/profile"
                 className="font-semibold text-teal-800 underline dark:text-teal-300"
               >
-                Set your nation →
+                Open profile →
               </Link>
             </p>
           ) : null}

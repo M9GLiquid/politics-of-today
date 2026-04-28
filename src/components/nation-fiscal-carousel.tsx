@@ -73,7 +73,8 @@ export function NationFiscalCarousel({
     if (el && el.clientWidth > 0) {
       el.scrollLeft = start * el.clientWidth;
     }
-    setIndex(start);
+    const frame = window.requestAnimationFrame(() => setIndex(start));
+    return () => window.cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-align when nation list or default nation changes, not when radar payload refreshes
   }, [initialNationId, snapshotIdsKey]);
 

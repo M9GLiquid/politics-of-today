@@ -1,21 +1,34 @@
 import { prisma } from "@/lib/prisma";
 import { TOP_PARTY_BALLOT_SIZE } from "@/lib/constants";
 
+export type RankedParty = {
+  id: string;
+  slug: string;
+  name: string;
+  createdAt: Date;
+  _count: { upvotes: number };
+};
+
+type PartyUpvoteCount = { upvotes: number } | { PartyUpvote: number };
+
+export function compareRankedPartiesByUpvotes(
+  a: { createdAt: Date; _count: PartyUpvoteCount },
+  b: { createdAt: Date; _count: PartyUpvoteCount },
+): number {
+  const aCount = "upvotes" in a._count ? a._count.upvotes : a._count.PartyUpvote;
+  const bCount = "upvotes" in b._count ? b._count.upvotes : b._count.PartyUpvote;
+  const diff = bCount - aCount;
+  if (diff !== 0) return diff;
+  return a.createdAt.getTime() - b.createdAt.getTime();
+}
+
 /**
  * Non-system parties sorted by upvotes (ties → older first).
  * With `nationId`, only upvotes from that nation count. Guests / null → global counts.
  */
 export async function listRankedNonSystemParties(
   nationId?: string | null,
-): Promise<
-  Array<{
-    id: string;
-    slug: string;
-    name: string;
-    createdAt: Date;
-    _count: { upvotes: number };
-  }>
-> {
+): Promise<RankedParty[]> {
   const parties = await prisma.party.findMany({
     where: { isSystem: false },
     select: {
@@ -28,15 +41,11 @@ export async function listRankedNonSystemParties(
           PartyUpvote: nationId
             ? { where: { nationId } }
             : true,
-        },
+          },
       },
     },
   });
-  parties.sort((a, b) => {
-    const diff = b._count.PartyUpvote - a._count.PartyUpvote;
-    if (diff !== 0) return diff;
-    return a.createdAt.getTime() - b.createdAt.getTime();
-  });
+  parties.sort(compareRankedPartiesByUpvotes);
   return parties.map((p) => ({
     id: p.id,
     slug: p.slug,
@@ -57,12 +66,18 @@ export async function getBallotPartyIds(
   return parties.slice(0, TOP_PARTY_BALLOT_SIZE).map((p) => p.id);
 }
 
-export function ballotIdSetFromRanked(
+export function rankedPartyIdsFromSorted(
   parties: Array<{ id: string }>,
 ): Set<string> {
   return new Set(
     parties.slice(0, TOP_PARTY_BALLOT_SIZE).map((p) => p.id),
   );
+}
+
+export function ballotIdSetFromRanked(
+  parties: Array<{ id: string }>,
+): Set<string> {
+  return rankedPartyIdsFromSorted(parties);
 }
 
 export async function getSystemPartyId(): Promise<string | null> {

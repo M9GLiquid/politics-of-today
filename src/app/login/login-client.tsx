@@ -32,7 +32,7 @@ export function LoginClient({ nextPath }: Props) {
         return;
       }
       if (body.needsNationPick) {
-        window.location.assign("/account/nation");
+        window.location.assign("/profile");
         return;
       }
       window.location.assign(nextPath ?? "/");
@@ -100,20 +100,6 @@ export function LoginClient({ nextPath }: Props) {
           Register
         </Link>
       </p>
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-xs leading-relaxed text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-        <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-          Seed voters (after <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">npm run db:seed</code>)
-        </p>
-        <p>alice@play.test / play · bob@play.test / play</p>
-        <p className="mt-3 font-semibold text-zinc-800 dark:text-zinc-200">
-          Synthetic party founders and members (password{" "}
-          <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">seedseed</code>)
-        </p>
-        <p>
-          seed-founder-0@fake.seed … seed-founder-24@fake.seed (each PM of seed-party-0 … 24)
-        </p>
-        <p>seed-member-0@fake.seed … seed-member-24@fake.seed (joined a party)</p>
-      </div>
     </div>
   );
 }

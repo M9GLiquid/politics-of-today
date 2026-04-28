@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession, refreshJwtSessionCookie } from "@/lib/auth";
+import { PARTY_RULES } from "@/lib/constants";
 import { resolveUserNationIdForSession } from "@/lib/ensure-user-nation-from-session";
 import { PARTY_RANK_PM } from "@/lib/party-ranks";
 import { prisma } from "@/lib/prisma";
 import { isReservedPartySlug, slugifyPartySlug } from "@/lib/slug";
-
-const DESC_MIN = 80;
 
 export async function registerParty(input: {
   name: string;
@@ -68,10 +67,10 @@ export async function registerParty(input: {
   }
 
   const description = input.description.trim();
-  if (description.length < DESC_MIN) {
+  if (description.length < PARTY_RULES.descriptionMinLength) {
     return {
       ok: false,
-      error: `Party description must be at least ${DESC_MIN} characters (platform & values).`,
+      error: `Party description must be at least ${PARTY_RULES.descriptionMinLength} characters (platform & values).`,
     };
   }
 

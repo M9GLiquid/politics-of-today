@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { votingMonthBeforePublish } from "@/lib/party-months";
+import { selectWinningDraftsByCategory } from "@/lib/party-governance";
 
 /**
  * For each non-system party and category: take the draft with the most internal votes
@@ -31,31 +32,12 @@ export async function promoteWinningDraftsForMonth(
     const countByDraft = new Map(
       counts.map((c) => [c.draftId, c._count._all]),
     );
+    const selectedByCategory = selectWinningDraftsByCategory(
+      drafts,
+      countByDraft,
+    );
 
-    const byCategory = new Map<string, typeof drafts>();
-    for (const d of drafts) {
-      const list = byCategory.get(d.categoryId) ?? [];
-      list.push(d);
-      byCategory.set(d.categoryId, list);
-    }
-
-    for (const [, list] of byCategory) {
-      if (list.length === 0) continue;
-      let best = list[0];
-      let bestVotes = countByDraft.get(best.id) ?? 0;
-      for (let i = 1; i < list.length; i++) {
-        const cand = list[i];
-        const v = countByDraft.get(cand.id) ?? 0;
-        if (v > bestVotes) {
-          best = cand;
-          bestVotes = v;
-        } else if (v === bestVotes) {
-          if (cand.createdAt.getTime() < best.createdAt.getTime()) {
-            best = cand;
-          }
-        }
-      }
-
+    for (const [, best] of selectedByCategory) {
       categoriesTouched += 1;
 
       await prisma.$transaction([
